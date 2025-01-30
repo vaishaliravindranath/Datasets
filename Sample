@@ -1,0 +1,44 @@
+import os
+import pdfkit
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import time
+
+# Initialize Selenium WebDriver
+options = webdriver.ChromeOptions()
+options.add_argument("--headless")  # Run in headless mode
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+# Function to extract links from a page
+def get_all_links(url):
+    driver.get(url)
+    time.sleep(3)  # Wait for page load
+    links = driver.find_elements(By.TAG_NAME, "a")
+    urls = [link.get_attribute("href") for link in links if link.get_attribute("href")]
+    return list(set(urls))  # Remove duplicates
+
+# Function to save a webpage as PDF
+def save_as_pdf(url, filename):
+    driver.get(url)
+    time.sleep(3)
+    html = driver.page_source
+    pdfkit.from_string(html, filename)
+
+# Main function
+def scrape_website(base_url, output_folder="pdfs"):
+    os.makedirs(output_folder, exist_ok=True)
+    links = get_all_links(base_url)
+    
+    for i, link in enumerate(links):
+        if link.startswith(base_url):  # Only save internal links
+            pdf_path = os.path.join(output_folder, f"page_{i}.pdf")
+            save_as_pdf(link, pdf_path)
+            print(f"Saved: {pdf_path}")
+
+    driver.quit()
+
+# Usage
+scrape_website("https://example.com")  # Replace with the target website
